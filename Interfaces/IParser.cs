@@ -2,6 +2,6 @@
 {
     public interface IParser
     {
-        public void Parse(string URL, bool isRecursive);
+        public void Parse(string URL, string baseURL, bool isRecursive);
     }
 }

@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using NReco.Logging.File;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.DevTools.V126.Runtime;
 using System;
 
 namespace MakeSmoke
@@ -14,10 +13,47 @@ namespace MakeSmoke
     {
         public static void Main(string[] args)
         {
-            string URL = "https://www.dunlop.eu/en_gb/motorcycle";
-            bool debugMode = true;
+            string URL = String.Empty;
+            string baseURL = String.Empty;
+            bool debugMode = false;
             bool recursive = false;
-            string logFileName = $"makesmoke_log_{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}.txt";
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i].Equals("-d"))
+                {
+                    recursive = true;
+                }
+                else if (args[i].Equals("-d"))
+                {
+                    debugMode = true;
+                }
+                else if (args[i].StartsWith("--base="))
+                {
+                    baseURL = args[i].Substring(7);
+                } else if (args[i].StartsWith("-"))
+                {
+                    Console.WriteLine($"Unknown argument: {args[i]}");
+                }
+                else
+                {
+                    URL = args[i];
+                }
+            }
+
+            //string URL = "https://www.dunlop.eu/en_gb/motorcycle#/";
+            //string baseURL = String.Empty;
+            //bool debugMode = false;
+            //bool recursive = true;
+
+            if (URL == String.Empty)
+            {
+                Console.WriteLine("No URL given for smoke. Ending program.");
+                return;
+            }
+
+            string timeStamp = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            string logFileName = $"makesmoke_log_{timeStamp}.txt";
             
             IServiceCollection services = new ServiceCollection();
             services.AddLogging(builder => GetLoggerOptions(builder, logFileName, debugMode));
@@ -28,11 +64,11 @@ namespace MakeSmoke
             ILoggerFactory loggerFactory = app.GetRequiredService<ILoggerFactory>();
             ILogger<Program> logger = loggerFactory.CreateLogger<Program>();
             logger.LogDebug("Logger initialized");
-            logger.LogInformation("URL to parse {URL}, Debug mode: {debug}, Recursive mode: {recursive}", URL, debugMode, recursive);
+            logger.LogInformation("Debug mode: {debug}, Recursive mode: {recursive}", debugMode, recursive);
 
             IParser parser = app.GetRequiredService<IParser>();
             logger.LogDebug("Parser initialized");
-            parser.Parse(URL, recursive);
+            parser.Parse(URL, baseURL, recursive);
             logger.LogInformation("Parsing is ended.");
         }
 
@@ -45,10 +81,10 @@ namespace MakeSmoke
 
         private static void GetLoggerOptions(ILoggingBuilder builder, string logFileName, bool debugMode = false) {
             builder.AddConsole();
-            builder.AddDebug();
             builder.AddFile(logFileName, append: true);
             if (debugMode)
             {
+                builder.AddDebug();
                 builder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Debug);
             }
             else

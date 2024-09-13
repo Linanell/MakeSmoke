@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace MakeSmoke.Data
 {
@@ -21,7 +20,7 @@ namespace MakeSmoke.Data
         protected Dictionary<string, LinkData> _Dictionary { get; } = new Dictionary<string, LinkData>();
         protected Dictionary<string, List<string>> _Errors { get; } = new Dictionary<string, List<string>>();
         protected string _originalURL = String.Empty;
-        protected string _originalURI = String.Empty;
+        protected string _formattedURL = String.Empty;
 
         protected string[] staticFileExtensions = [".jpg", ".jpeg", ".png", ".gif", ".svg", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".zip", ".rar", ".mp4", ".mp3",];
 
@@ -31,19 +30,12 @@ namespace MakeSmoke.Data
             _Driver = driver;
         }
 
-        public void Parse(string URLToParse, bool isRecursive)
+        public void Parse(string URLToParse, string baseURL, bool isRecursive)
         {
-            Uri uri = new Uri(URLToParse);
-            string uriToParse = $"{uri.Scheme}://{uri.Host}";
-            if (!uri.IsDefaultPort)
-            {
-                uriToParse += $":{uri.Port}";
-            }
-            string? currentURL;
-            _originalURL = URLToParse;
-            _originalURI = uriToParse;
+            InitializeURLs(URLToParse, baseURL);
             AddToDictionary(_originalURL);
 
+            string? currentURL;
             try
             {
                 if (isRecursive)
@@ -81,7 +73,7 @@ namespace MakeSmoke.Data
         {
             _Logger.LogInformation("Going to URL: {URLToGo}", URL);
             _Driver.Navigate().GoToUrl(URL);
-            Thread.Sleep(150);
+            Thread.Sleep(1500);
             CheckErrorsOnPage(URL);
             ParseLinksOnPage(URL);
             MarkAsChecked(URL);
@@ -96,6 +88,7 @@ namespace MakeSmoke.Data
                 foreach (var error in errors)
                 {
                     {
+                        _Logger.LogError("New error found: {error}", error.ToString());
                         _Errors[URL].Add(error.ToString());
                     }
                 }
@@ -106,22 +99,29 @@ namespace MakeSmoke.Data
         {
             HtmlDocument html = new HtmlDocument();
             html.LoadHtml(_Driver.PageSource);
-            List<string> listOfLinks =
-            [
-                .. html
+            List<string> listOfLinks = new List<string>();
+            try
+            {
+                listOfLinks.AddRange(
+                html
                     .DocumentNode
                     .SelectNodes("//a[@href]")
                     .Select(node => node.GetAttributeValue("href", string.Empty))
-                    .Where(href => !string.IsNullOrEmpty(href) && !href.StartsWith("#"))
-                    .ToList(),
-            ];
+                    .Where(href => !string.IsNullOrEmpty(href))
+                    .ToList()
+                );
+            }
+            catch (ArgumentNullException ex)
+            {
+                _Logger.LogCritical("Something gone wrong during page parsing. Looks like page have no links: {Exception}", ex);
+            }
 
             foreach (var linkOnPage in listOfLinks)
             {
-                string newLink = CheckForHalfLink(linkOnPage, _originalURI);
-                if (!_Dictionary.ContainsKey(newLink))
+                string fullLink = CreateFullLink(linkOnPage, URL);
+                if (!_Dictionary.ContainsKey(fullLink))
                 {
-                    AddToDictionary(newLink);
+                    AddToDictionary(fullLink);
                 }
             }
         }
@@ -136,6 +136,26 @@ namespace MakeSmoke.Data
             ;
             _Logger.LogDebug("Next link to parse: {URLToParse}", link);
             return link;
+        }
+
+        private void InitializeURLs(string URLToParse, string baseURL)
+        {
+            _originalURL = URLToParse;
+            _Logger.LogDebug("URL to parse: {OriginalURL}", _originalURL);
+            if (baseURL == String.Empty)
+            {
+                int pos = _originalURL.IndexOf("#/");
+                if (pos != -1)
+                {
+                    _formattedURL = _originalURL.Substring(0, pos);
+                }
+                else _formattedURL = _originalURL;
+            }
+            else
+            {
+                _formattedURL = baseURL;
+            }
+            _Logger.LogDebug("Base URL: {BaseURL}", baseURL);
         }
 
         protected void MarkAsChecked (string URL)
@@ -177,12 +197,13 @@ namespace MakeSmoke.Data
 
         protected bool CheckForExternal(string URL)
         {
-            return !URL.Contains(_originalURL);
+            return !URL.Contains(_formattedURL);
         }
 
-        protected string CheckForHalfLink(string URL, string firstHalfOfLink)
+        protected string CreateFullLink(string urlToCheck, string currentLink)
         {
-            return URL.StartsWith("/") ? firstHalfOfLink+URL : URL;
+            Uri absoluteUri = new Uri(new Uri(currentLink), urlToCheck);
+            return absoluteUri.ToString();
         }
 
         public string ToJson(Object obj)
