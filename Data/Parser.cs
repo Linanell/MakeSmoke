@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MakeSmoke.Data
 {
@@ -17,7 +18,8 @@ namespace MakeSmoke.Data
     {
         protected ILogger _Logger { get; }
         protected IWebDriver _Driver { get; }
-        protected Dictionary<string, LinkData> _Dictionary { get; set; } = new Dictionary<string, LinkData>();
+        protected Dictionary<string, LinkData> _Dictionary { get; } = new Dictionary<string, LinkData>();
+        protected Dictionary<string, List<string>> _Errors { get; } = new Dictionary<string, List<string>>();
         protected string _originalURL = String.Empty;
         protected string _originalURI = String.Empty;
 
@@ -49,13 +51,13 @@ namespace MakeSmoke.Data
                     _Logger.LogInformation("Entering recursive mode.");
                     while ((currentURL = GetNextLink()) != null)
                     {
-                        ParseLinksOnLink(currentURL);
+                        CheckLink(currentURL);
                     }
                     _Logger.LogInformation("Links to parse are over. Ends parsing.");
                 } else
                 {
                     _Logger.LogInformation("Start parsing URL: {URL}", _originalURL);
-                    ParseLinksOnLink(_originalURL);
+                    CheckLink(_originalURL);
                 }
             }
             catch (Exception ex)
@@ -67,7 +69,7 @@ namespace MakeSmoke.Data
             {
 
                 File.WriteAllText($"makesmoke_links_{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}.txt", ToJson(_Dictionary));
-                // write all links
+                File.WriteAllText($"makesmoke_errors_{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}.txt", ToJson(_Errors));
                 _Logger.LogDebug("Shutdown driver.");
                 _Driver.Quit();
                 _Logger.LogDebug("Driver shutdowned.");
@@ -75,25 +77,45 @@ namespace MakeSmoke.Data
 
         }
 
-
-        public void ParseLinksOnLink(string URL)
+        public void CheckLink(string URL)
         {
             _Logger.LogInformation("Going to URL: {URLToGo}", URL);
             _Driver.Navigate().GoToUrl(URL);
             Thread.Sleep(150);
+            CheckErrorsOnPage(URL);
+            ParseLinksOnPage(URL);
+            MarkAsChecked(URL);
+        }
+
+        public void CheckErrorsOnPage(string URL)
+        {
+            var errors = _Driver.Manage().Logs.GetLog(LogType.Browser);
+            if (errors.Count > 0)
+            {
+                _Errors.Add(URL, new List<string>());
+                foreach (var error in errors)
+                {
+                    {
+                        _Errors[URL].Add(error.ToString());
+                    }
+                }
+            }
+        }
+
+        public void ParseLinksOnPage(string URL)
+        {
             HtmlDocument html = new HtmlDocument();
             html.LoadHtml(_Driver.PageSource);
-            List<string> listOfLinks = new List<string>();
-            listOfLinks.AddRange(html
-                .DocumentNode
-                .SelectNodes("//a[@href]")
-                .Select(node => node.GetAttributeValue("href", string.Empty))
-                .Where(href => !string.IsNullOrEmpty(href) && !href.StartsWith("#"))
-                .ToList());
+            List<string> listOfLinks =
+            [
+                .. html
+                    .DocumentNode
+                    .SelectNodes("//a[@href]")
+                    .Select(node => node.GetAttributeValue("href", string.Empty))
+                    .Where(href => !string.IsNullOrEmpty(href) && !href.StartsWith("#"))
+                    .ToList(),
+            ];
 
-            
-
-            listOfLinks.Distinct();
             foreach (var linkOnPage in listOfLinks)
             {
                 string newLink = CheckForHalfLink(linkOnPage, _originalURI);
@@ -102,7 +124,6 @@ namespace MakeSmoke.Data
                     AddToDictionary(newLink);
                 }
             }
-            MarkAsChecked(URL);
         }
 
         private string? GetNextLink()
@@ -116,7 +137,6 @@ namespace MakeSmoke.Data
             _Logger.LogDebug("Next link to parse: {URLToParse}", link);
             return link;
         }
-
 
         protected void MarkAsChecked (string URL)
         {
@@ -133,25 +153,6 @@ namespace MakeSmoke.Data
             _Dictionary.Add(URL, new LinkData(linkType));
         }
 
-        // #to be deleted
-        //protected string? GetURLFromElement(IWebElement element)
-        //{
-        //    try
-        //    {
-        //        if (element.GetAttribute("href") != null)
-        //        {
-        //            return element.GetAttribute("href");
-        //        }
-        //        else return element.GetAttribute("src");
-        //    }
-        //    catch (StaleElementReferenceException ex)
-        //    {
-        //        _Logger.LogWarning("Stale element reference. Returning null: {element}", element.ToString());
-        //        return null;
-        //    }
-        //}
-
-
         protected LinkType AnalyzeLinkType(string URL)
         {
             if (CheckForStatic(URL))
@@ -164,7 +165,6 @@ namespace MakeSmoke.Data
             } 
             else return LinkType.InternalPage;
         }
-
 
         protected bool CheckForStatic(string URL)
         {
@@ -184,13 +184,6 @@ namespace MakeSmoke.Data
         {
             return URL.StartsWith("/") ? firstHalfOfLink+URL : URL;
         }
-
-        //protected string CheckForHalfLink(string firstHalfOfLink)
-        //{
-        //    StringBuilder stringBuilder = new StringBuilder();
-        //    stringBuilder.Append(firstHalfOfLink);
-        //    if ()
-        //}
 
         public string ToJson(Object obj)
         {

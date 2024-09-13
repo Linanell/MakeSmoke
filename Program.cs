@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using NReco.Logging.File;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.DevTools.V126.Runtime;
 using System;
 
 namespace MakeSmoke
@@ -15,7 +16,7 @@ namespace MakeSmoke
         {
             string URL = "https://www.dunlop.eu/en_gb/motorcycle";
             bool debugMode = true;
-            bool recursive = true;
+            bool recursive = false;
             string logFileName = $"makesmoke_log_{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}.txt";
             
             IServiceCollection services = new ServiceCollection();
@@ -38,8 +39,7 @@ namespace MakeSmoke
         private static IWebDriver GetChromeDriver()
         {
             var options = new ChromeOptions();
-
-
+            options.SetLoggingPreference(LogType.Browser, OpenQA.Selenium.LogLevel.Severe);
             return new ChromeDriver(options);
         }
 
