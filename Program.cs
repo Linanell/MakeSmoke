@@ -13,7 +13,7 @@ namespace MakeSmoke
     {
         public static void Main(string[] args)
         {
-            string URL = "https://www.dunlop.eu/en_gb/motorcycle.html#/";
+            string URL = "https://www.dunlop.eu/en_gb/motorcycle";
             bool debugMode = true;
             bool recursive = true;
             string logFileName = $"makesmoke_log_{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}.txt";
