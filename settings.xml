@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <!-- Example configuration of settings.xml file-->
+<!-- Move this file to compiled project file before using-->
 <Configuration>
 	<URL>https://example.com/firstPageForParse</URL>
 	<FilterURL>https://example.com</FilterURL>
