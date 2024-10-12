@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!-- Example configuration of settings.xml file-->
+<Configuration>
+	<URL>https://example.com/firstPageForParse</URL>
+	<FilterURL>https://example.com</FilterURL>
+	<DebugMode>false</DebugMode>
+	<Recursive>true</Recursive>
+	<ThreadsCount>5</ThreadsCount>
+</Configuration>
