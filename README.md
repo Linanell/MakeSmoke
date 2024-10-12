@@ -1,13 +1,21 @@
-﻿MakeSmoke is a program for simple parsing sites.
-Chromedriver - 129.0.6668.8900.
+﻿# Make smoke
 
-How to run:
-At least URL to parse and number of threads are required.
-Parameters avaliable:
--d - Enable debug mode with additional output messages.
--r - Enable recursive mode. With this option parser will automatically parse all links on pages from this site.
---filter=*part of url* - Set a custom url for detecting internal/external url. Url that doesn't belongs to filter url will be marked as external and ignored.
---threads=*number of threads* - Set a number of browser threads for async testing.
-*URL without parameters* - URL to parse.
+**MakeSmoke is a program for simple parsing sites.**  
+Chromedriver version: `129.0.6668.8900`
 
-Also avaliable "settings.xml" file for loading parameters from file. See "settings.xml" file in project for details.
+## How to Run:
+
+At least a URL to parse and the number of threads are required.
+
+### Available Parameters:
+
+- `-d` - Enable debug mode with additional output messages.
+- `-r` - Enable recursive mode. With this option, the parser will automatically parse all links on pages from the site.
+- `--filter=*part of url*` - Set a custom URL for detecting internal/external links. URLs that do not belong to the filter URL will be marked as external and ignored.
+- `--threads=*number of threads*` - Set the number of browser threads for asynchronous parsing.
+- `*URL without parameters*` - The URL to parse.
+
+## Example:
+
+```bash
+MakeSmoke.exe -r --threads=5 https://example.com/pageToParse
