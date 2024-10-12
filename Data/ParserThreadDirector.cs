@@ -66,11 +66,8 @@ namespace MakeSmoke.Data
                     firstParser = false;
                 }
             }
-            //await Task.WhenAll(ParserTasks);
-            bool tasksEnded = false;
             while (true)
             {
-                tasksEnded = true;
                 //if (!ParserTasks.All(task => !task.IsFaulted))
                 //{
                 //    RestartTasks(URLToParse, baseURL, isRecursive);
@@ -83,7 +80,6 @@ namespace MakeSmoke.Data
                     task.IsCanceled
                 ))
                 {
-                    tasksEnded = false;
                     break;
                 }
                 
@@ -104,6 +100,7 @@ namespace MakeSmoke.Data
             return new ParserAsync(LogFactory, LinkDictionary);
         }
 
+        // not working for now
         public void RestartTasks(string URLToParse, bool isRecursive)
         {
             for (int i = 0; i < ParserTasks.Count; i++)
