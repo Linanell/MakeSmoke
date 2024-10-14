@@ -7,4 +7,5 @@
 	<DebugMode>false</DebugMode>
 	<Recursive>true</Recursive>
 	<ThreadsCount>5</ThreadsCount>
+	<LogFileName>example_site</LogFileName>
 </Configuration>
