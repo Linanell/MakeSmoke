@@ -17,4 +17,7 @@ public class Configuration
 
     [XmlElement("ThreadsCount")]
     public byte ThreadsCount { get; set; }
+
+    [XmlElement("LogFileName")]
+    public string LogFileName { get; set; }
 }

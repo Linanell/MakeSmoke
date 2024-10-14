@@ -1,5 +1,6 @@
 ﻿using MakeSmoke.Data;
 using MakeSmoke.Interfaces;
+using static MakeSmoke.Utils.Constants;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -17,9 +18,27 @@ namespace MakeSmoke
             string filterURL = String.Empty;
             bool debugMode = false;
             bool recursive = false;
-            string threadsCountString = String.Empty;
             byte threadsCount = 0;
-            
+            string logFileName = String.Empty;
+
+            try
+            {
+                Configuration settings = ConfigurationLoader.LoadConfiguration();
+                if (settings != null)
+                {
+                    if (settings.URL != String.Empty) URL = settings.URL;
+                    if (settings.FilterURL != String.Empty) filterURL = settings.FilterURL;
+                    if (settings.DebugMode) debugMode = true;
+                    if (settings.Recursive) recursive = true;
+                    if (settings.ThreadsCount != 0) threadsCount = settings.ThreadsCount;
+                    if (settings.LogFileName != String.Empty) logFileName = settings.LogFileName;
+                }
+            }
+            catch
+            {
+                Console.WriteLine("Failed to load parser configuration.");
+            }
+
             for (int i = 0; i < args.Length; i++)
             {
                 if (args[i].Equals("-r"))
@@ -32,7 +51,7 @@ namespace MakeSmoke
                 }
                 else if (args[i].StartsWith("--threads="))
                 {
-                    threadsCountString = args[i].Substring(10);
+                    string threadsCountString = args[i].Substring(10);
                     bool isParsed = Byte.TryParse(threadsCountString, out threadsCount);
                     if (!isParsed)
                     {
@@ -42,6 +61,10 @@ namespace MakeSmoke
                 else if (args[i].StartsWith("--filter="))
                 {
                     filterURL = args[i].Substring(9);
+                }
+                else if (args[i].StartsWith("--name="))
+                {
+                    logFileName = args[i].Substring(7);
                 }
                 else if (args[i].StartsWith("-"))
                 {
@@ -53,47 +76,29 @@ namespace MakeSmoke
                 }
             }
 
-            try
-            {
-                Configuration settings = ConfigurationLoader.LoadConfiguration();
-                if (settings != null)
-                {
-                    if (URL == String.Empty && settings.URL != String.Empty) URL = settings.URL;
-                    if (filterURL == String.Empty && settings.FilterURL != String.Empty) filterURL = settings.FilterURL;
-                    if (settings.DebugMode == true) debugMode = true;
-                    if (settings.Recursive == true) recursive = true;
-                    if (threadsCount == 0 && settings.ThreadsCount != 0) threadsCount = settings.ThreadsCount;
-                }
-            }
-            catch
-            {
-                Console.WriteLine("Failed to load parser configuration.");
-            }
-
-            bool isEnoughForParse = true;
             if (URL == String.Empty)
             {
-                isEnoughForParse = false;
-                Console.WriteLine("No URL is given.");
+                Console.WriteLine("No URL is given. Not enough data is given. Closing program.");
+                return;
             }
+
             if (threadsCount == 0)
             {
-                isEnoughForParse = false;
-                Console.WriteLine("No threads count is given.");
+                threadsCount = THREADS_COUNT_BY_DEFAULT;
+                Console.WriteLine($"No threads count is given. Using default value: { THREADS_COUNT_BY_DEFAULT }");
             }
-            if (!isEnoughForParse)
+            if (logFileName == String.Empty)
             {
-                Console.WriteLine("Not enough data is given. Closing program.");
-                return;
+                logFileName = LOG_FILE_NAME_BY_DEFAULT;
+                Console.WriteLine($"No log file name is given. Using default value: { LOG_FILE_NAME_BY_DEFAULT }");
             }
 
             filterURL = GetFormattedURL(URL, filterURL);
 
             string timeStamp = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
-            string logFileName = $"makesmoke_log_{timeStamp}.txt";
-            
+
             IServiceCollection services = new ServiceCollection();
-            services.AddLogging(builder => GetLoggerOptions(builder, logFileName, debugMode));
+            services.AddLogging(builder => GetLoggerOptions(builder, $"{logFileName}_log_{timeStamp}.txt", debugMode));
             services.AddSingleton<ILinkDictionary, LinkDictionary>();
             services.AddSingleton<IParserThreadDirector, ParserThreadDirector>();
             ServiceProvider app = services.BuildServiceProvider();
@@ -110,9 +115,9 @@ namespace MakeSmoke
 
             threadDirector.StartParse(URL, recursive);
 
-            File.WriteAllText($"makesmoke_links_{timeStamp}.txt", ToJson(linkDictionary.GetDictionary()));
-            File.WriteAllText($"makesmoke_errors_{timeStamp}.txt", ToJson(linkDictionary.GetErrors()));
-            File.WriteAllText($"makesmoke_redirects_{timeStamp}.txt", ToJson(linkDictionary.GetRedirects()));
+            File.WriteAllText($"{logFileName}_links_{timeStamp}.txt", ToJson(linkDictionary.Dictionary));
+            File.WriteAllText($"{logFileName}_errors_{timeStamp}.txt", ToJson(linkDictionary.Errors));
+            File.WriteAllText($"{logFileName}_redirects_{timeStamp}.txt", ToJson(linkDictionary.Redirects));
             logger.LogInformation("Parsing is ended.");
         }
 
