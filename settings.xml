@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <!-- Example configuration of settings.xml file-->
-<!-- Move this file to compiled project file before using-->
+<!-- Move this file to compiled project directory before using-->
 <Configuration>
 	<URL>https://example.com/firstPageForParse</URL>
 	<FilterURL>https://example.com</FilterURL>
@@ -8,7 +8,6 @@
 	<Recursive>true</Recursive>
 	<ThreadsCount>5</ThreadsCount>
 	<LogFileName>example_site</LogFileName>
-  <Blacklist>
-    <ExcludeError>example error</ExcludeError>
-  </Blacklist>
+  <BlackList>blacklist.json</BlackList>
+  <VerifyLinks>verify-links.json</VerifyLinks>
 </Configuration>

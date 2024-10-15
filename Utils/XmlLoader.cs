@@ -1,9 +1,10 @@
 ﻿using System.IO;
 using System.Xml.Serialization;
+using static MakeSmoke.Utils.Constants;
 
-public class ConfigurationLoader
+public class XmlLoader
 {
-    const string filePath = "settings.xml";
+    const string filePath = SETTINGS_FILE_NAME;
     public static Configuration LoadConfiguration()
     {
         XmlSerializer serializer = new XmlSerializer(typeof(Configuration));

@@ -33,10 +33,8 @@ namespace MakeSmoke.Interfaces
         {
             await _SemaphoreDictionary.WaitAsync();
 
-            if (whereFound != String.Empty)
-            {
-                whereFound = RemoveFragment(whereFound);
-            }
+            if (whereFound != String.Empty) whereFound = RemoveFragment(whereFound);
+
             if (!Dictionary.ContainsKey(URL))
             {
                 _Logger.LogInformation("Adding new link to list: {URL}", URL);
@@ -45,6 +43,7 @@ namespace MakeSmoke.Interfaces
                 Dictionary.Add(URL, new LinkData(linkType, whereFound));
             } else if (Dictionary[URL].WhereFound.Count < 3 && !Dictionary[URL].WhereFound.Contains(whereFound))
             {
+                // add at max 3 where found links. It helps to know if link is was found on 1 page or on multiple
                 Dictionary[URL].WhereFound.Add(whereFound);
             }
 
@@ -55,21 +54,44 @@ namespace MakeSmoke.Interfaces
         {
             await _SemaphoreErrors.WaitAsync();
 
-            Errors.Add(url, new List<string>());
-            foreach (var error in errors)
+            if (AtLeastOneError(errors))
             {
-                string errorString = error.ToString();
-                _Logger.LogError("New error found: {error}", errorString);
-                if (ExcludedErrors.Count > 0 && !ExcludedErrors.All(e => !errorString.Contains(e)))
+                Errors.Add(url, new List<string>());
+                foreach (var error in errors)
                 {
-                    _Logger.LogInformation("Error has been excluded from adding to list: {error}", errorString);
-                } else
-                {
-                    Errors[url].Add(errorString);
+                    string errorString = error.ToString();
+                    _Logger.LogError("New error found: {error}", errorString);
+                    if (ExcludedErrors.Count > 0 && !ExcludedErrors.All(e => !errorString.Contains(e)))
+                    {
+                        _Logger.LogInformation("Error has been excluded from adding to list: {error}", errorString);
+                    }
+                    else
+                    {
+                        Errors[url].Add(errorString);
+                    }
                 }
             }
 
             _SemaphoreErrors.Release();
+        }
+
+        public bool AtLeastOneError(ReadOnlyCollection<OpenQA.Selenium.LogEntry> errors)
+        {
+            if (ExcludedErrors.Count > 0)
+            {
+                foreach (var error in errors)
+                {
+                    if (ExcludedErrors.All(e => !error.ToString().Contains(e)))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            else
+            {
+                return true;
+            }
         }
 
         public void AddToRedirects(string originalUrl, string redirectedURL)

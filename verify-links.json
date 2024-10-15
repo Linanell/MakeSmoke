@@ -1,0 +1,14 @@
+{
+  "verify": [
+    "https://example.com",
+    "https://example.com/page1",
+    "https://example.com/page2",
+    "https://example.com/blog/post1",
+    "https://example.com/blog/post2",
+    "https://example.com/about",
+    "https://example.com/contact",
+    "https://example.com/shop/product1",
+    "https://example.com/shop/product2",
+    "https://example.com/help/faq"
+  ]
+}

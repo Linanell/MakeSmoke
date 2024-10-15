@@ -23,11 +23,8 @@ public class Configuration
     public string LogFileName { get; set; }
 
     [XmlElement("BlackList")]
-    public Blacklist BlackList { get; set; }
-}
+    public string BlackList { get; set; }
 
-public class Blacklist
-{
-    [XmlElement("ExcludeError")]
-    public List<string> ExcludeError { get; set; }
+    [XmlElement("VerifyLinks")]
+    public string VerifyLinks { get; set; }
 }

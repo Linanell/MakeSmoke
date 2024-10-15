@@ -4,5 +4,6 @@
     {
         public const string LOG_FILE_NAME_BY_DEFAULT = "makesmoke";
         public const byte THREADS_COUNT_BY_DEFAULT = 5;
+        public const string SETTINGS_FILE_NAME = "settings.xml";
     }
 }

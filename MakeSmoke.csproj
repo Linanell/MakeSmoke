@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <Nullable>disable</Nullable>
+    <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
@@ -17,7 +17,7 @@
     <PackageReference Include="NReco.Logging.File" Version="1.2.1" />
     <PackageReference Include="Selenium.Support" Version="4.25.0" />
     <PackageReference Include="Selenium.WebDriver" Version="4.25.0" />
-    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="129.0.6668.8900" />
+    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="129.0.6668.10000" />
   </ItemGroup>
 
 </Project>

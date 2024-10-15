@@ -1,5 +1,4 @@
 ﻿using MakeSmoke.Enums;
-using OpenQA.Selenium.DevTools.V127.Runtime;
 using System.Collections.Generic;
 
 namespace MakeSmoke.Models
