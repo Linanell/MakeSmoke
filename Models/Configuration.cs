@@ -1,4 +1,5 @@
-﻿using System.Xml.Serialization;
+﻿using System.Collections.Generic;
+using System.Xml.Serialization;
 
 [XmlRoot("Configuration")]
 public class Configuration
@@ -20,4 +21,13 @@ public class Configuration
 
     [XmlElement("LogFileName")]
     public string LogFileName { get; set; }
+
+    [XmlElement("BlackList")]
+    public Blacklist BlackList { get; set; }
+}
+
+public class Blacklist
+{
+    [XmlElement("ExcludeError")]
+    public List<string> ExcludeError { get; set; }
 }

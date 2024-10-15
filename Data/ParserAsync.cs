@@ -1,5 +1,6 @@
 ﻿using HtmlAgilityPack;
 using MakeSmoke.Interfaces;
+using static MakeSmoke.Utils.StringUtils;
 using Microsoft.Extensions.Logging;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
@@ -52,10 +53,6 @@ namespace MakeSmoke.Data
                         CheckLink(URLToParse);
                     }
                 }
-                catch (Exception ex)
-                {
-                    _Logger.LogCritical("Something gone wrong during parsing: {exception}", ex);
-                }
                 finally
                 {
                     _Logger.LogDebug("Shutdown driver.");
@@ -67,13 +64,20 @@ namespace MakeSmoke.Data
 
         public void CheckLink(string URL)
         {
-            _Logger.LogInformation("Going to URL: {URLToGo}", URL);
-            _Driver.Navigate().GoToUrlAsync(URL);
-            WaitForPageLoad();
-            Thread.Sleep(100);
-            CheckErrorsOnPage(URL);
-            ParseLinksOnPage(URL);
-            CheckForRedirect(URL);
+            try
+            {
+                _Logger.LogInformation("Going to URL: {URLToGo}", URL);
+                _Driver.Navigate().GoToUrlAsync(URL);
+                WaitForPageLoad();
+                Thread.Sleep(1000);
+                CheckErrorsOnPage(URL);
+                ParseLinksOnPage(URL);
+                CheckForRedirect(URL);
+            }
+            catch (Exception ex)
+            {
+                _Logger.LogCritical("Something gone wrong during parsing: {exception}", ex);
+            }
         }
 
         public void CheckForRedirect(string URL)
@@ -86,7 +90,7 @@ namespace MakeSmoke.Data
             var errors = _Driver.Manage().Logs.GetLog(LogType.Browser);
             if (errors.Count > 0)
             {
-                _LinkDictionary.AddToErrors(URL, errors);
+                _LinkDictionary.AddToErrorsAsync(URL, errors);
             }
         }
 
@@ -97,6 +101,7 @@ namespace MakeSmoke.Data
             List<string> listOfLinks = new List<string>();
             try
             {
+                _Logger.LogDebug("Fetching links from page: {page}", URL);
                 listOfLinks.AddRange(
                 html
                     .DocumentNode
@@ -110,14 +115,18 @@ namespace MakeSmoke.Data
             {
                 _Logger.LogCritical("Something gone wrong during page parsing. Looks like page have no links: {Exception}", ex);
             }
-            listOfLinks = listOfLinks.Select(link => WebUtility.HtmlDecode(link)).ToList();
-
-            foreach (var linkOnPage in listOfLinks)
+            if (listOfLinks.Count > 0)
             {
-                string fullLink = CreateFullLink(linkOnPage, URL);
-                if (fullLink != null && fullLink != String.Empty)
+                listOfLinks = listOfLinks.Select(link => WebUtility.HtmlDecode(link)).ToList();
+
+                foreach (var linkOnPage in listOfLinks)
                 {
-                    _LinkDictionary.AddToDictionaryAsync(fullLink, URL);
+                    string fullLink = CreateFullLink(linkOnPage, URL);
+
+                    if (fullLink != null && fullLink != String.Empty)
+                    {
+                        _LinkDictionary.AddToDictionaryAsync(fullLink, URL);
+                    }
                 }
             }
         }
@@ -125,7 +134,7 @@ namespace MakeSmoke.Data
         protected string CreateFullLink(string urlToCheck, string currentLink)
         {
             Uri absoluteUri = new Uri(new Uri(currentLink), urlToCheck);
-            return absoluteUri.ToString();
+            return RemoveFragment(absoluteUri);
         }
 
         public void WaitForPageLoad()
@@ -144,7 +153,6 @@ namespace MakeSmoke.Data
                 }
                 catch (InvalidOperationException)
                 {
-                    // Если JavaScript еще не доступен (например, страница не начала загружаться), продолжаем ожидание
                     return false;
                 }
             });

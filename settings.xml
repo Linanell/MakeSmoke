@@ -8,4 +8,7 @@
 	<Recursive>true</Recursive>
 	<ThreadsCount>5</ThreadsCount>
 	<LogFileName>example_site</LogFileName>
+  <Blacklist>
+    <ExcludeError>example error</ExcludeError>
+  </Blacklist>
 </Configuration>

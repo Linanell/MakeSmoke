@@ -1,12 +1,14 @@
 ﻿using MakeSmoke.Data;
 using MakeSmoke.Interfaces;
 using static MakeSmoke.Utils.Constants;
+using static MakeSmoke.Utils.StringUtils;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using NReco.Logging.File;
 using System;
 using System.IO;
+using System.Collections.Generic;
 
 namespace MakeSmoke
 {
@@ -20,6 +22,7 @@ namespace MakeSmoke
             bool recursive = false;
             byte threadsCount = 0;
             string logFileName = String.Empty;
+            List<string> excludedErrors = new();
 
             try
             {
@@ -32,6 +35,13 @@ namespace MakeSmoke
                     if (settings.Recursive) recursive = true;
                     if (settings.ThreadsCount != 0) threadsCount = settings.ThreadsCount;
                     if (settings.LogFileName != String.Empty) logFileName = settings.LogFileName;
+                    if (settings.BlackList?.ExcludeError?.Count > 0)
+                    {
+                        foreach (string exclude in settings.BlackList.ExcludeError)
+                        {
+                            excludedErrors.Add(exclude);
+                        }
+                    }
                 }
             }
             catch
@@ -66,6 +76,10 @@ namespace MakeSmoke
                 {
                     logFileName = args[i].Substring(7);
                 }
+                else if (args[i].StartsWith("--exclude-error="))
+                {
+                    excludedErrors.Add(args[i].Substring(16));
+                }
                 else if (args[i].StartsWith("-"))
                 {
                     Console.WriteLine($"Unknown argument: {args[i]}");
@@ -93,8 +107,6 @@ namespace MakeSmoke
                 Console.WriteLine($"No log file name is given. Using default value: { LOG_FILE_NAME_BY_DEFAULT }");
             }
 
-            filterURL = GetFormattedURL(URL, filterURL);
-
             string timeStamp = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
 
             IServiceCollection services = new ServiceCollection();
@@ -107,7 +119,8 @@ namespace MakeSmoke
             logger.LogInformation("Debug mode: {debug}, Recursive mode: {recursive}", debugMode, recursive);
 
             ILinkDictionary linkDictionary = app.GetRequiredService<ILinkDictionary>();
-            linkDictionary.SetFormattedURL(filterURL);
+            linkDictionary.FilterURL = RemoveFragment(filterURL);
+            linkDictionary.ExcludedErrors = excludedErrors;
 
             IParserThreadDirector threadDirector = app.GetRequiredService<IParserThreadDirector>();
             threadDirector.TargetThreads = threadsCount;
@@ -133,20 +146,6 @@ namespace MakeSmoke
             {
                 builder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
             }
-        }
-
-        private static string GetFormattedURL(string URL, string baseURL)
-        {
-            if (baseURL == String.Empty)
-            {
-                int pos = URL.IndexOf("#/");
-                if (pos != -1)
-                {
-                    baseURL = URL.Substring(0, pos);
-                }
-                else baseURL = URL;
-            }
-            return baseURL;
         }
 
         public static string ToJson(Object obj)

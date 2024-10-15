@@ -17,8 +17,8 @@ namespace MakeSmoke.Data
 
         public ILinkDictionary LinkDictionary { get; }
 
-        public List<IParserAsync> Parsers { get; } = new List<IParserAsync>();
-        public List<Task> ParserTasks { get; } = new List<Task>();
+        public List<IParserAsync> Parsers { get; } = new();
+        public List<Task> ParserTasks { get; } = new();
 
         public byte TargetThreads { get; set; }
 
@@ -68,10 +68,6 @@ namespace MakeSmoke.Data
             }
             while (true)
             {
-                //if (!ParserTasks.All(task => !task.IsFaulted))
-                //{
-                //    RestartTasks(URLToParse, baseURL, isRecursive);
-                //}
                 if (ParserTasks.All(
                     task => 
                     task.IsCompleted || 
@@ -98,18 +94,6 @@ namespace MakeSmoke.Data
         public IParserAsync CreateParser()
         {
             return new ParserAsync(LogFactory, LinkDictionary);
-        }
-
-        // not working for now
-        public void RestartTasks(string URLToParse, bool isRecursive)
-        {
-            for (int i = 0; i < ParserTasks.Count; i++)
-            {
-                if (ParserTasks[i].IsFaulted)
-                {
-                    ParserTasks[i] = Parsers[i].ParseAsync(DriverGenerator.GetChromeDriver(), URLToParse, isRecursive);
-                }
-            }
         }
     }
 }
