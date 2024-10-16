@@ -183,7 +183,7 @@ namespace MakeSmoke
 
         public static void FillArrayWithJson(List<string> arrayToFill, string filePath, string key)
         {
-            JArray? array = JsonLoader.LoadJson(filePath, "exclude");
+            JArray? array = JsonLoader.LoadJson(filePath, key);
             if (array != null)
             {
                 foreach (JToken value in array)
