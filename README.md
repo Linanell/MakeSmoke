@@ -9,7 +9,7 @@ Bash command may have higher priority than .xml file. If the file is already in 
 
 
 
-Chromedriver version used in project: `129.0.6668.10000`
+Chromedriver version used in project: `130.0.6723.5800`
 
 ## How to Run:
 
